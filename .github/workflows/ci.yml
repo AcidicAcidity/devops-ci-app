@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 
-    permissions:
-      content: read
+permissions:
+  contents: read
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}
