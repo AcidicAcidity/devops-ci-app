@@ -23,7 +23,7 @@ def test_index(client) :
     response = client.get("/")
     assert response.status_code == 200
     assert response.get_json() == {
-        "service": "devons-ci-app",
+        "service": "devops-ci-app",
         "version": "1.0.0",
         "status": "running",
     }
