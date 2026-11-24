@@ -146,4 +146,4 @@ jobs:
               VERSION=${GITHUB_REF#refs/tags/v}
               docker push "${IMAGE_NAME}:${VERSION}"
             fi
-            grep -E 'digest:sha256:' push-sha.log push-latest.log
+            grep -E 'digest:sha256:' push-sha.log push-latest.log || true
