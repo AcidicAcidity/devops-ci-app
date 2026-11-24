@@ -3,6 +3,7 @@ name: CI - verify and publish image
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -119,20 +120,30 @@ jobs:
           docker exec smoke id
 
       - name: Tag registry image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         run: |
-          docker tag "devops-ci-app:${GITHUB_SHA}" "${IMAGE_NAME}:${GITHUB_SHA}"
-          docker tag "devops-ci-app:${GITHUB_SHA}" "${IMAGE_NAME}:latest"
+          if [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            docker tag "devops-ci-app:${GITHUB_SHA}" "${IMAGE_NAME}:${GITHUB_SHA}"
+            docker tag "devops-ci-app:${GITHUB_SHA}" "${IMAGE_NAME}:latest"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v} # Отрезаем префикс refs/tags/v
+            docker tag "devops-ci-app:${GITHUB_SHA}" "${IMAGE_NAME}:${VERSION}"
+          fi
 
       - name: Log in to GHCR
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         env:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: printf '%s\n' "$REGISTRY_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
 
       - name: Push image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         run: |
-            docker push "${IMAGE_NAME}:${GITHUB_SHA}" | tee push-sha.log
-            docker push "${IMAGE_NAME}:latest" | tee push-latest.log
+            if [[ "${{ github.ref }}" == refs/heads/main ]]; then
+              docker push "${IMAGE_NAME}:${GITHUB_SHA}" | tee push-sha.log
+              docker push "${IMAGE_NAME}:latest" | tee push-latest.log
+            elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+              VERSION=${GITHUB_REF#refs/tags/v}
+              docker push "${IMAGE_NAME}:${VERSION}"
+            fi
             grep -E 'digest:sha256:' push-sha.log push-latest.log
