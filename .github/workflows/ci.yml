@@ -108,10 +108,10 @@ jobs:
           fi
           python3 -m json.tool health.json
           python3 - <<'PY'
-            import json
-            from pathlib import Path
-            payload = json.loads(Path("health.json").read_text(encoding="utf-8"))
-            assert payload == {"status": "ok"}, f"unexpected /health payload: {payload}"
+          import json
+          from pathlib import Path
+          payload = json.loads(Path("health.json").read_text(encoding="utf-8"))
+          assert payload == {"status": "ok"}, f"unexpected /health payload: {payload}"
           PY
 
           docker exec smoke id
