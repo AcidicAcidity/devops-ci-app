@@ -147,3 +147,29 @@ jobs:
               docker push "${IMAGE_NAME}:${VERSION}"
             fi
             grep -E 'digest:sha256:' push-sha.log push-latest.log || true
+
+  deploy:
+    needs: image
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: [self-hosted, devops-vm]
+    permissions:
+      contents: read
+    concurrency:
+      group: deploy-devops-vm
+      cancel-in-progress: false
+    env:
+      VM_HOST: 192.168.56.3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false   # токен для git push заданию не нужен
+
+      - name: Deploy with Ansible
+        working-directory: ansible
+        run: |
+          ansible-playbook -i inventory/prod.ini site.yml -e "app_tag=$GITHUB_SHA"
+
+      - name: Check through Nginx
+        run: |
+          curl -f http://${{ env.VM_HOST }}/health
